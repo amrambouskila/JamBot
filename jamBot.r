@@ -5,7 +5,8 @@
 # Install and load necessary libraries
 if (!requireNamespace("keras", quietly = TRUE)) install.packages("keras")
 if (!requireNamespace("tuneR", quietly = TRUE)) install.packages("tuneR")
-if (!requireNamespace("tensorflow", quietly = TRUE)) install_keras()
+if (!requireNamespace("tensorflow", quietly = TRUE)) install.packages("tensorflow")
+if (!requireNamespace("reticulate", quietly = TRUE)) install.packages("reticulate")
 
 library(keras)
 library(tuneR)
@@ -13,6 +14,7 @@ library(seewave)
 library(signal)
 library(dplyr)
 library(tensorflow)
+library(reticulate)
 
 # Function to load and preprocess recorded music
 load_recorded_data <- function(audio_folder) {
@@ -98,7 +100,7 @@ create_rnn_model <- function(input_shape) {
 }
 
 # Train the model with validation and logging
-train_model <- function(model, X_train, y_train, X_val, y_val, epochs = 50, batch_size = 32) {
+train_model <- function(model, X_train, y_train, X_val, y_val, epochs = 10, batch_size = 32) {
   # tensorboard(log_dir = "logs")
   
   model %>% fit(

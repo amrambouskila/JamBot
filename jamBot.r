@@ -33,9 +33,43 @@ load_recorded_data <- function(audio_folder) {
     return(sound_data)
   })
   
-  sound_data <- do.call(rbind, sound_data_list)
+  sound_data <- unlist(sound_data_list)
   sample_rate <- readWave(audio_files[1])@samp.rate
   return(list(data = sound_data, sample_rate = sample_rate))
+}
+
+# Example pitch shift function (you may need to adjust this or find an appropriate package)
+pitchshift <- function(sound_data, semitones) {
+  # Placeholder function: you need to replace this with actual pitch shifting implementation
+  return(sound_data)
+}
+
+# Example time stretch function (you may need to adjust this or find an appropriate package)
+stretch <- function(sound_data, factor) {
+  # Placeholder function: you need to replace this with actual time stretching implementation
+  return(sound_data)
+}
+
+# Data augmentation function
+augment_data <- function(sound_data) {
+  augmented_data <- list()
+  
+  for (data in sound_data) {
+    # Pitch shift
+    augmented_data <- c(augmented_data, list(data))
+    augmented_data <- c(augmented_data, list(pitchshift(data, semitones = 2)))
+    augmented_data <- c(augmented_data, list(pitchshift(data, semitones = -2)))
+    
+    # Time stretch
+    augmented_data <- c(augmented_data, list(stretch(data, factor = 1.2)))
+    augmented_data <- c(augmented_data, list(stretch(data, factor = 0.8)))
+    
+    # Add noise
+    noise <- rnorm(length(data), mean = 0, sd = sd(data) * 0.05)
+    augmented_data <- c(augmented_data, list(data + noise))
+  }
+  
+  return(unlist(augmented_data))
 }
 
 # Function to perform Fourier Transform and analyze frequencies
@@ -65,7 +99,7 @@ create_rnn_model <- function(input_shape) {
 
 # Train the model with validation and logging
 train_model <- function(model, X_train, y_train, X_val, y_val, epochs = 50, batch_size = 32) {
-  tensorboard(log_dir = "logs")
+  # tensorboard(log_dir = "logs")
   
   model %>% fit(
     X_train, y_train,
@@ -111,8 +145,11 @@ if (file.exists(model_file_path)) {
   sound_data <- guitar_data$data
   sample_rate <- guitar_data$sample_rate
   
+  # Augment data
+  augmented_data <- augment_data(list(sound_data))
+  
   # Split data
-  split <- split_data(sound_data)
+  split <- split_data(augmented_data)
   X_train <- array_reshape(split$train[1:(length(split$train) - 1)], c(length(split$train) - 1, 1, 1))
   y_train <- array_reshape(split$train[2:length(split$train)], c(length(split$train) - 1, 1))
   

@@ -2,7 +2,11 @@
 # install.packages('tuneR')
 # install_keras()
 
-# Load necessary libraries
+# Install and load necessary libraries
+if (!requireNamespace("keras", quietly = TRUE)) install.packages("keras")
+if (!requireNamespace("tuneR", quietly = TRUE)) install.packages("tuneR")
+if (!requireNamespace("tensorflow", quietly = TRUE)) install_keras()
+
 library(keras)
 library(tuneR)
 library(seewave)
@@ -13,6 +17,16 @@ library(tensorflow)
 # Function to load and preprocess recorded music
 load_recorded_data <- function(audio_folder) {
   audio_files <- list.files(audio_folder, pattern = "\\.wav$", full.names = TRUE)
+  
+  # Print the current working directory and list of audio files found
+  print(paste("Current Working Directory:", getwd()))
+  print("Audio files found:")
+  print(audio_files)
+  
+  if (length(audio_files) == 0) {
+    stop("No WAV files found in the specified directory.")
+  }
+  
   sound_data_list <- lapply(audio_files, function(audio_file) {
     sound <- readWave(audio_file)
     sound_data <- sound@left
@@ -22,28 +36,6 @@ load_recorded_data <- function(audio_folder) {
   sound_data <- do.call(rbind, sound_data_list)
   sample_rate <- readWave(audio_files[1])@samp.rate
   return(list(data = sound_data, sample_rate = sample_rate))
-}
-
-# Data augmentation function
-augment_data <- function(sound_data) {
-  augmented_data <- list()
-  
-  for (data in sound_data) {
-    # Pitch shift
-    augmented_data <- c(augmented_data, data)
-    augmented_data <- c(augmented_data, pitchshift(data, semitones = 2))
-    augmented_data <- c(augmented_data, pitchshift(data, semitones = -2))
-    
-    # Time stretch
-    augmented_data <- c(augmented_data, stretch(data, factor = 1.2))
-    augmented_data <- c(augmented_data, stretch(data, factor = 0.8))
-    
-    # Add noise
-    noise <- rnorm(length(data), mean = 0, sd = sd(data) * 0.05)
-    augmented_data <- c(augmented_data, data + noise)
-  }
-  
-  return(do.call(rbind, augmented_data))
 }
 
 # Function to perform Fourier Transform and analyze frequencies
@@ -114,17 +106,13 @@ if (file.exists(model_file_path)) {
   cat("Model file not found. Training a new model...\n")
   
   # Load and preprocess the recorded music data
-  guitar_data <- load_recorded_data('path/to/recordings/guitar')
-  piano_data <- load_recorded_data('path/to/recordings/piano')
+  guitar_data <- load_recorded_data('./audio_files')
   
-  sound_data <- c(guitar_data$data, piano_data$data)
+  sound_data <- guitar_data$data
   sample_rate <- guitar_data$sample_rate
   
-  # Augment data
-  augmented_data <- augment_data(list(guitar_data$data, piano_data$data))
-  
   # Split data
-  split <- split_data(augmented_data)
+  split <- split_data(sound_data)
   X_train <- array_reshape(split$train[1:(length(split$train) - 1)], c(length(split$train) - 1, 1, 1))
   y_train <- array_reshape(split$train[2:length(split$train)], c(length(split$train) - 1, 1))
   
@@ -148,7 +136,7 @@ if (file.exists(model_file_path)) {
 
 # Example usage
 # Load and preprocess the sound data
-recorded_data <- load_recorded_data('path/to/recordings/guitar')
+recorded_data <- load_recorded_data('./audio_files')
 sound_data <- recorded_data$data
 sample_rate <- recorded_data$sample_rate
 
@@ -175,3 +163,4 @@ generated_fourier_data <- fourier_analysis(generated_sound, sample_rate)
 plot(generated_fourier_data$freqs, generated_fourier_data$amplitude, type = 'l', col = 'red', 
      xlab = 'Frequency (Hz)', ylab = 'Amplitude', 
      main = 'Fourier Analysis of Generated Sound')
+
